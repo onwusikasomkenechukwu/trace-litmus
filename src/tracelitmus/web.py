@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from html import escape
 from os import environ
 from pathlib import Path
 from re import search
@@ -88,15 +89,31 @@ def apply_terminal_theme() -> None:
 
         .tl-pane {
           border: 1px solid var(--tl-border);
-          background: linear-gradient(180deg, #0d120d 0%, #080b08 100%);
-          padding: 1rem;
+          background: #080b08;
+          padding: 0;
           margin: 0 0 1rem 0;
           border-radius: 0;
+        }
+
+        .tl-pane-title {
+          color: #000;
+          background: var(--tl-primary);
+          padding: 0.35rem 0.6rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          text-shadow: none;
+          overflow-wrap: anywhere;
+        }
+
+        .tl-pane-body {
+          padding: 1rem;
         }
 
         .tl-header {
           color: var(--tl-primary);
           font-weight: 700;
+          text-transform: uppercase;
+          text-shadow: 0 0 5px rgba(51, 255, 0, 0.5);
           overflow-wrap: anywhere;
         }
 
@@ -109,6 +126,11 @@ def apply_terminal_theme() -> None:
           margin: 0.8rem 0;
         }
 
+        .tl-separator {
+          color: var(--tl-muted);
+          overflow-wrap: anywhere;
+        }
+
         .tl-tag {
           display: inline-block;
           border: 1px solid var(--tl-border);
@@ -117,6 +139,13 @@ def apply_terminal_theme() -> None:
           color: var(--tl-primary);
           background: #071007;
           white-space: nowrap;
+        }
+
+        .tl-tag-solid {
+          color: #000;
+          background: var(--tl-primary);
+          border-color: var(--tl-primary);
+          text-shadow: none;
         }
 
         .tl-tag-warn { color: var(--tl-secondary); border-color: var(--tl-secondary); }
@@ -150,6 +179,48 @@ def apply_terminal_theme() -> None:
           padding: 0.7rem;
         }
 
+        .tl-logo {
+          color: var(--tl-primary);
+          line-height: 1.05;
+          white-space: pre;
+          overflow-x: auto;
+          text-shadow: 0 0 5px rgba(51, 255, 0, 0.5);
+          margin: 0 0 0.8rem 0;
+        }
+
+        .tl-prompt {
+          color: var(--tl-secondary);
+          overflow-wrap: anywhere;
+        }
+
+        .tl-cursor {
+          display: inline-block;
+          width: 0.65ch;
+          height: 1em;
+          margin-left: 0.15rem;
+          vertical-align: -0.12em;
+          background: var(--tl-primary);
+          animation: tl-blink 1s steps(1) infinite;
+        }
+
+        .tl-typing {
+          display: inline-block;
+          overflow: hidden;
+          white-space: nowrap;
+          max-width: 100%;
+          animation: tl-type 1.1s steps(38, end);
+        }
+
+        @keyframes tl-blink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
+        }
+
+        @keyframes tl-type {
+          from { width: 0; }
+          to { width: 100%; }
+        }
+
         .stButton > button, .stDownloadButton > button {
           border-radius: 0 !important;
           border: 1px solid var(--tl-primary) !important;
@@ -159,6 +230,16 @@ def apply_terminal_theme() -> None:
           box-shadow: none !important;
         }
 
+        .stButton > button:hover, .stDownloadButton > button:hover {
+          background: var(--tl-primary) !important;
+          color: #000 !important;
+          text-shadow: none !important;
+        }
+
+        .stButton > button:active, .stDownloadButton > button:active {
+          transform: translateY(1px);
+        }
+
         .stButton > button::before { content: "[ "; }
         .stButton > button::after { content: " ]"; }
         .stDownloadButton > button::before { content: "[ "; }
@@ -166,6 +247,13 @@ def apply_terminal_theme() -> None:
 
         input, textarea, [data-baseweb="select"] > div, [role="radiogroup"] {
           border-radius: 0 !important;
+          font-family: var(--tl-font) !important;
+        }
+
+        input, textarea {
+          background: #050805 !important;
+          color: var(--tl-primary) !important;
+          border: 1px solid var(--tl-border) !important;
         }
 
         input:focus, textarea:focus, button:focus, [data-baseweb="radio"] div:focus {
@@ -189,8 +277,10 @@ def apply_terminal_theme() -> None:
         }
 
         @media (max-width: 760px) {
-          .tl-pane { padding: 0.75rem; }
+          .tl-pane-body { padding: 0.75rem; }
           .tl-score { font-size: 1.05rem; }
+          .tl-logo { font-size: 0.65rem; }
+          .tl-typing { white-space: normal; animation: none; }
         }
         </style>
         """,
@@ -257,15 +347,17 @@ def _status_tag(label: str, *, state: str = "ok") -> str:
         class_name += " tl-tag-warn"
     elif state == "err":
         class_name += " tl-tag-err"
-    return f'<span class="{class_name}">{label}</span>'
+    elif state == "solid":
+        class_name += " tl-tag-solid"
+    return f'<span class="{class_name}">{escape(label)}</span>'
 
 
 def _terminal_pane(title: str, body: str = "") -> None:
     st.markdown(
         f"""
         <div class="tl-pane">
-          <div class="tl-header">{title}</div>
-          {body}
+          <div class="tl-pane-title">{escape(title)}</div>
+          <div class="tl-pane-body">{body}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -372,12 +464,12 @@ def _render_status_pane(
     phoenix_state = "warn" if _is_localhost_url(phoenix_url) and _is_hosted_runtime() else "ok"
     body = (
         f'<div class="tl-log">{_status_tag("[OK]" if source_state == "ok" else "[WARN]", state=source_state)} '
-        f"selected_source={source}</div>"
-        f'<div class="tl-log">{_status_tag("[OK]")} default_project={project}</div>'
+        f"selected_source={escape(source)}</div>"
+        f'<div class="tl-log">{_status_tag("[OK]")} default_project={escape(project)}</div>'
         f'<div class="tl-log">{_status_tag("[OK]" if gemini_explanation else "[WARN]", state="ok" if gemini_explanation else "warn")} '
         f"gemini_enabled={'yes' if gemini_explanation else 'no'}</div>"
         f'<div class="tl-log">{_status_tag("[OK]" if phoenix_state == "ok" else "[WARN]", state=phoenix_state)} '
-        f"phoenix_base_url={_redact_url(phoenix_url)}</div>"
+        f"phoenix_base_url={escape(_redact_url(phoenix_url))}</div>"
         f'<div class="tl-log">{_status_tag("[OK]")} hosted_app_mode=offline-default</div>'
     )
     _terminal_pane("+--- SYSTEM STATUS ---+", body)
@@ -387,25 +479,25 @@ def _render_report_pane(markdown: str) -> None:
     score = _score_from_markdown(markdown)
     counts = _severity_counts_from_markdown(markdown)
     count_lines = "".join(
-        f'<div class="tl-log">{severity}={count}</div>' for severity, count in counts.items()
+        f'<div class="tl-log">{escape(severity)}={escape(count)}</div>' for severity, count in counts.items()
     )
     _terminal_pane(
         "+--- AUDIT REPORT PANE ---+",
-        f'<div class="tl-score">score { _score_bar(score) }</div><div class="tl-line"></div>{count_lines}',
+        f'<div class="tl-score">score {escape(_score_bar(score))}</div><div class="tl-separator">============================================================</div>{count_lines}',
     )
     for finding in _parse_findings(markdown):
         tag = SEVERITY_TAGS.get(finding.severity, "[INFO]")
         state = "err" if finding.severity in {"critical", "high"} else "warn" if finding.severity == "medium" else "ok"
-        evidence_lines = "".join(f'<div class="tl-log">&gt; {item}</div>' for item in finding.evidence)
+        evidence_lines = "".join(f'<div class="tl-log">&gt; {escape(item)}</div>' for item in finding.evidence)
         body = (
             f'{_status_tag(tag, state=state)} {_status_tag(f"[{finding.rule_id}]")}'
-            f'<div class="tl-line"></div>'
-            f'<div class="tl-header">{finding.title}</div>'
-            f'<div class="tl-muted">{finding.description}</div>'
-            f'<div class="tl-line"></div>'
+            f'<div class="tl-separator">------------------------------------------------------------</div>'
+            f'<div class="tl-header">{escape(finding.title)}</div>'
+            f'<div class="tl-muted">{escape(finding.description)}</div>'
+            f'<div class="tl-separator">------------------------------------------------------------</div>'
             f"{evidence_lines}"
-            f'<div class="tl-line"></div>'
-            f'<div class="tl-command">$ fix --apply "{finding.recommended_fix}"</div>'
+            f'<div class="tl-separator">------------------------------------------------------------</div>'
+            f'<div class="tl-command">$ fix --apply "{escape(finding.recommended_fix)}"</div>'
         )
         _terminal_pane("+--- FINDING ---+", body)
 
@@ -417,8 +509,8 @@ def _render_gemini_pane(markdown: str) -> None:
     body = (
         f'{_status_tag("[LOCKED]")} deterministic fields immutable'
         '<div class="tl-log">Gemini explains findings but cannot mutate score, severity, rule ID, or evidence refs.</div>'
-        '<div class="tl-line"></div>'
-        f'<div class="tl-pre">{section}</div>'
+        '<div class="tl-separator">------------------------------------------------------------</div>'
+        f'<div class="tl-pre">{escape(section)}</div>'
     )
     _terminal_pane("+--- GEMINI EXPLANATION LAYER ---+", body)
 
@@ -450,10 +542,19 @@ def main() -> None:
     load_env_file()
     st.set_page_config(page_title="TraceLitmus", layout="wide")
     apply_terminal_theme()
+    logo = r"""
+ _______ ____   ___   ____ _____ _     ___ _____ __  __ _   _ ____
+|_   _|  _ \ / _ \ / ___| ____| |   |_ _|_   _|  \/  | | | / ___|
+  | | | |_) | | | | |   |  _| | |    | |  | | | |\/| | | | \___ \
+  | | |  _ <| |_| | |___| |___| |___ | |  | | | |  | | |_| |___) |
+  |_| |_| \_\\___/ \____|_____|_____|___| |_| |_|  |_|\___/|____/
+"""
     _terminal_pane(
         "TRACE_LITMUS://REPRO_AUDIT_CONSOLE",
+        f'<pre class="tl-logo">{escape(logo)}</pre>'
+        '<div class="tl-header"><span class="tl-typing">BOOTING REPRODUCIBILITY AUDIT CONSOLE</span><span class="tl-cursor"></span></div>'
         '<div class="tl-subtitle">A reproducibility litmus test for Phoenix LLM evaluations.</div>'
-        '<div class="tl-line"></div>'
+        '<div class="tl-separator">============================================================</div>'
         f'{_status_tag("[LOCKED]")} Deterministic evidence core '
         f'{_status_tag("[LLM]", state="warn")} Gemini explanation only '
         f'{_status_tag("[MCP]")} Phoenix local path verified',
@@ -463,16 +564,16 @@ def main() -> None:
         st.markdown("### +--- CONTROL PANE ---+")
         source_options = ["Offline fixture", "Phoenix MCP"]
         default_source = _default_source()
-        st.markdown("`source@tracelitmus:~$`")
+        st.markdown('<div class="tl-prompt">source@tracelitmus:~$ select --source</div>', unsafe_allow_html=True)
         source = st.radio(
             "Source",
             source_options,
             index=source_options.index(default_source),
             help="Phoenix MCP runs the live @arizeai/phoenix-mcp path. Offline fixture is for local skeleton checks.",
         )
-        st.markdown("`project@tracelitmus:~$`")
+        st.markdown('<div class="tl-prompt">project@tracelitmus:~$ set --project</div>', unsafe_allow_html=True)
         project = st.text_input("Project", value=_default_project(source))
-        st.markdown("`output@tracelitmus:~$`")
+        st.markdown('<div class="tl-prompt">output@tracelitmus:~$ write --markdown</div>', unsafe_allow_html=True)
         output_path = st.text_input("Output Markdown", value=str(_default_output(source)))
         gemini_explanation = st.checkbox(
             "Add Gemini explanation",
@@ -530,7 +631,8 @@ def main() -> None:
         _terminal_pane(
             "+--- READY ---+",
             '<div class="tl-log">[OK] Choose a source, enter a project, and run the audit.</div>'
-            f'<div class="tl-log">[OK] session_started={datetime.now().isoformat(timespec="seconds")}</div>',
+            f'<div class="tl-log">[OK] session_started={escape(datetime.now().isoformat(timespec="seconds"))}</div>'
+            '<div class="tl-command">$ tracelitmus audit --source selected --evidence locked</div>',
         )
 
 
