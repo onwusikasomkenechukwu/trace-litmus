@@ -1,0 +1,57 @@
+# TraceLitmus Audit Report
+
+Project: {{ report.project_id }}
+
+Source: {{ report.source }}
+
+Reproducibility score: {{ report.score }} / 100
+
+Score derivation: {{ report.score_start }} - {{ report.score_penalty }} = {{ report.score }}
+
+Severity counts:
+{% for severity, count in report.severity_counts.items() %}
+- {{ severity }}: {{ count }}
+{% endfor %}
+
+Generated at: {{ report.generated_at.isoformat() }}
+
+Summary: {{ report.summary }}
+
+{% if report.agent_explanation or report.agent_warning %}
+## Gemini Explanation
+
+{% if report.agent_warning %}
+Warning: {{ report.agent_warning }}
+{% endif %}
+{% if report.agent_explanation %}
+### Executive summary
+
+{{ report.agent_explanation.executive_summary }}
+
+### Finding explanations
+
+{% for item in report.agent_explanation.finding_explanations %}
+- {{ item }}
+{% endfor %}
+
+### Prioritized next steps
+
+{% for item in report.agent_explanation.prioritized_next_steps %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+
+{% endif %}
+{% for rule_id, findings in findings_by_rule.items() %}
+## {{ rule_id }}
+
+{% for finding in findings %}
+### {{ finding.title }}
+
+- Severity: {{ finding.severity }}
+- Description: {{ finding.description }}
+- Evidence: {{ finding.evidence | evidence_refs }}
+- Recommended fix: {{ finding.recommended_fix }}
+
+{% endfor %}
+{% endfor %}

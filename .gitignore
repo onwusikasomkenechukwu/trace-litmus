@@ -1,0 +1,11 @@
+.env
+*.env
+service-account.json
+credentials.json
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+reports/*.md
+reports/*.html
+.venv/
+node_modules/

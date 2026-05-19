@@ -1,0 +1,185 @@
+{
+  "audit_expectations": {
+    "severity_counts": {
+      "critical": 1,
+      "high": 2,
+      "medium": 3,
+      "low": 1
+    },
+    "score_start": 100,
+    "score_penalty": 64,
+    "score": 36
+  },
+  "projects": [
+    {
+      "id": "proj_demo",
+      "name": "demo",
+      "description": "Demo Phoenix project for TraceLitmus offline audits"
+    }
+  ],
+  "prompts": [
+    {
+      "id": "prompt_answerer",
+      "name": "answerer",
+      "description": "Question answering prompt under evaluation"
+    }
+  ],
+  "prompt_versions": [
+    {
+      "id": "pv_baseline_001",
+      "prompt_id": "prompt_answerer",
+      "version_tag": "baseline",
+      "template": "Answer with one cited sentence.",
+      "model": "gemini-1.5-pro",
+      "parameters": {
+        "temperature": 0.0,
+        "top_p": 1.0
+      }
+    },
+    {
+      "id": "pv_candidate_002",
+      "prompt_id": "prompt_answerer",
+      "version_tag": "candidate",
+      "template": "Answer conversationally and include useful context.",
+      "model": "gemini-1.5-pro",
+      "parameters": {
+        "temperature": 0.7,
+        "top_p": 0.95
+      }
+    }
+  ],
+  "datasets": [
+    {
+      "id": "ds_eval_v1",
+      "name": "qa-regression",
+      "version": "2026-05-01"
+    },
+    {
+      "id": "ds_eval_v2",
+      "name": "qa-regression",
+      "version": "2026-05-18"
+    }
+  ],
+  "dataset_examples": [
+    {
+      "id": "ex_001",
+      "dataset_id": "ds_eval_v1",
+      "input": {
+        "question": "What evidence supports claim A?"
+      },
+      "expected_output": {
+        "answer": "Claim A is supported by source S1."
+      }
+    },
+    {
+      "id": "ex_002",
+      "dataset_id": "ds_eval_v1",
+      "input": {
+        "question": "Which source contradicts claim B?"
+      },
+      "expected_output": {
+        "answer": "Source S2 contradicts claim B."
+      }
+    },
+    {
+      "id": "ex_003",
+      "dataset_id": "ds_eval_v2",
+      "input": {
+        "question": "Summarize the support for claim C."
+      },
+      "expected_output": {
+        "answer": "Source S3 supports claim C with a measured outcome."
+      }
+    }
+  ],
+  "experiments": [
+    {
+      "id": "exp_baseline_001",
+      "dataset_id": "ds_eval_v1",
+      "prompt_version_id": "pv_baseline_001",
+      "metrics": {
+        "accuracy": 0.74,
+        "metric_definition": "exact match against expected answer",
+        "seed": 1234,
+        "confidence_interval": [0.66, 0.82]
+      },
+      "sample_size": 5
+    },
+    {
+      "id": "exp_candidate_002",
+      "dataset_id": "ds_eval_v1",
+      "prompt_version_id": "pv_candidate_002",
+      "metrics": {
+        "accuracy": 0.78,
+        "metric_definition": "",
+        "baseline_experiment_id": "exp_baseline_001"
+      },
+      "sample_size": 5
+    },
+    {
+      "id": "exp_candidate_003",
+      "dataset_id": "ds_eval_v2",
+      "prompt_version_id": "pv_candidate_002",
+      "metrics": {
+        "accuracy": 0.81,
+        "notes": "Dataset version changed and seed omitted"
+      },
+      "sample_size": 3
+    }
+  ],
+  "traces": [
+    {
+      "id": "trace_001",
+      "project_id": "proj_demo",
+      "span_count": 4,
+      "status": "OK"
+    },
+    {
+      "id": "trace_002",
+      "project_id": "proj_demo",
+      "span_count": 3,
+      "status": "OK"
+    },
+    {
+      "id": "trace_003",
+      "project_id": "proj_demo",
+      "span_count": 6,
+      "status": "ERROR"
+    },
+    {
+      "id": "trace_004",
+      "project_id": "proj_demo",
+      "span_count": 2,
+      "status": "OK"
+    },
+    {
+      "id": "trace_005",
+      "project_id": "proj_demo",
+      "span_count": 5,
+      "status": "OK"
+    }
+  ],
+  "spans": [
+    {
+      "id": "span_001",
+      "trace_id": "trace_001",
+      "name": "llm.generate"
+    },
+    {
+      "id": "span_002",
+      "trace_id": "trace_003",
+      "name": "retriever.search"
+    }
+  ],
+  "span_annotations": [
+    {
+      "id": "ann_001",
+      "span_id": "span_001",
+      "name": "quality",
+      "result": {
+        "score": 0.7,
+        "label": "partial"
+      }
+    }
+  ]
+}

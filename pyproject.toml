@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gemini-agents-2026-06"
+version = "0.0.1"
+description = "TraceLitmus Phase 0 skeleton for Phoenix reproducibility audits."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+  "google-genai>=1.0",
+  "jinja2>=3.1",
+  "mcp>=1.24",
+  "pydantic>=2.0",
+  "streamlit>=1.50",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tracelitmus"]
