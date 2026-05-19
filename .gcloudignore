@@ -1,0 +1,15 @@
+.git
+.venv
+__pycache__/
+**/__pycache__/
+*.pyc
+.env
+*.env
+reports/*.md
+reports/*.html
+node_modules
+.pytest_cache
+.mypy_cache
+service-account.json
+credentials.json
+.streamlit/secrets.toml
